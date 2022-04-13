@@ -32,6 +32,7 @@ require (
 	github.com/mattermost/logr/v2 v2.0.15 // indirect
 	github.com/mattermost/mattermost-plugin-api v0.0.27 // indirect
 	github.com/mattermost/mattermost-server/v6 v6.5.0 // indirect
+	github.com/mattermost/morph v0.0.0-20220401091636-39f834798da8 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/minio/md5-simd v1.1.2 // indirect
