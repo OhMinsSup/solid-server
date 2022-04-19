@@ -2,8 +2,10 @@ package sqlstore
 
 import (
 	"database/sql"
+	sq "github.com/Masterminds/squirrel"
 	"github.com/mattermost/mattermost-plugin-api/cluster"
 	"github.com/mattermost/mattermost-server/v6/plugin"
+	"solid-server/model"
 
 	"github.com/mattermost/mattermost-server/v6/shared/mlog"
 )
@@ -63,7 +65,10 @@ func (s *SQLStore) DBType() string {
 	return s.dbType
 }
 
-func (s *SQLStore) getQueryBuilder() string {
-	return s.tablePrefix
+func (s *SQLStore) getQueryBuilder(db sq.BaseRunner) sq.StatementBuilderType {
+	builder := sq.StatementBuilder
+	if s.dbType == model.PostgresDBType || s.dbType == model.SqliteDBType {
+		builder = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
+	}
+	return builder.RunWith(db)
 }
-
