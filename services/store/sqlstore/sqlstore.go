@@ -45,6 +45,13 @@ func New(params Params) (*SQLStore, error) {
 		pluginAPI:        params.PluginAPI,
 	}
 
+	err := store.Migrate()
+	if err != nil {
+		params.Logger.Error(`Table creation / migration failed`, mlog.Err(err))
+
+		return nil, err
+	}
+
 	return store, nil
 }
 
@@ -71,4 +78,14 @@ func (s *SQLStore) getQueryBuilder(db sq.BaseRunner) sq.StatementBuilderType {
 		builder = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 	}
 	return builder.RunWith(db)
+}
+
+func (s *SQLStore) escapeField(fieldName string) string { //nolint:unparam
+	if s.dbType == model.MysqlDBType {
+		return "`" + fieldName + "`"
+	}
+	if s.dbType == model.PostgresDBType || s.dbType == model.SqliteDBType {
+		return "\"" + fieldName + "\""
+	}
+	return fieldName
 }
