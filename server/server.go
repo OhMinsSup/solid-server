@@ -8,18 +8,32 @@ import (
 	"solid-server/services/config"
 	"solid-server/services/store"
 	"solid-server/services/store/sqlstore"
+	"solid-server/web"
 	"sync"
 )
 
 type Server struct {
-	config *config.Configuration
-	logger *mlog.Logger
-	store  store.Store
+	config    *config.Configuration
+	webServer *web.Server
+	store     store.Store
+	logger    *mlog.Logger
 
 	servicesStartStopMutex sync.Mutex
 
 	localRouter     *mux.Router
 	localModeServer *http.Server
+}
+
+func New(params Params) (*Server, error) {
+	if err := params.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	// server
+	webServer := web.NewServer(params.Cfg.WebPath, params.Cfg.ServerRoot, params.Cfg.Port,
+		params.Cfg.UseSSL, params.Cfg.LocalOnly, params.Logger)
+
+	return nil, nil
 }
 
 func NewStore(config *config.Configuration, logger *mlog.Logger) (store.Store, error) {
@@ -38,7 +52,7 @@ func NewStore(config *config.Configuration, logger *mlog.Logger) (store.Store, e
 	storeParams := sqlstore.Params{
 		DBType:           config.DBType,
 		ConnectionString: config.DBConfigString,
-		TablePrefix:       config.DBTablePrefix,
+		TablePrefix:      config.DBTablePrefix,
 		Logger:           logger,
 		DB:               sqlDB,
 		IsPlugin:         false,
@@ -50,4 +64,12 @@ func NewStore(config *config.Configuration, logger *mlog.Logger) (store.Store, e
 		return nil, err
 	}
 	return db, nil
+}
+
+func (s *Server) Config() *config.Configuration {
+	return s.config
+}
+
+func (s *Server) Logger() *mlog.Logger {
+	return s.logger
 }
