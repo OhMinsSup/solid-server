@@ -5,6 +5,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/mattermost/mattermost-server/v6/shared/mlog"
 	"net/http"
+	"solid-server/app"
 	"solid-server/services/config"
 	"solid-server/services/store"
 	"solid-server/services/store/sqlstore"
@@ -22,6 +23,8 @@ type Server struct {
 
 	localRouter     *mux.Router
 	localModeServer *http.Server
+
+	app             *app.App
 }
 
 func New(params Params) (*Server, error) {
@@ -29,11 +32,25 @@ func New(params Params) (*Server, error) {
 		return nil, err
 	}
 
+	appServices := app.Services{
+		Store:  params.DBStore,
+		Logger: params.Logger,
+	}
+	app := app.New(params.Cfg, appServices)
+
 	// server
 	webServer := web.NewServer(params.Cfg.WebPath, params.Cfg.ServerRoot, params.Cfg.Port,
 		params.Cfg.UseSSL, params.Cfg.LocalOnly, params.Logger)
 
-	return nil, nil
+	server := Server{
+		config: params.Cfg,
+		webServer: webServer,
+		store: params.DBStore,
+		logger: params.Logger,
+		app: app,
+	}
+
+	return &server, nil
 }
 
 func NewStore(config *config.Configuration, logger *mlog.Logger) (store.Store, error) {
