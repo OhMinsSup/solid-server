@@ -24,7 +24,7 @@ type Server struct {
 	localRouter     *mux.Router
 	localModeServer *http.Server
 
-	app             *app.App
+	app *app.App
 }
 
 func New(params Params) (*Server, error) {
@@ -43,11 +43,11 @@ func New(params Params) (*Server, error) {
 		params.Cfg.UseSSL, params.Cfg.LocalOnly, params.Logger)
 
 	server := Server{
-		config: params.Cfg,
+		config:    params.Cfg,
 		webServer: webServer,
-		store: params.DBStore,
-		logger: params.Logger,
-		app: app,
+		store:     params.DBStore,
+		logger:    params.Logger,
+		app:       app,
 	}
 
 	return &server, nil
@@ -81,6 +81,33 @@ func NewStore(config *config.Configuration, logger *mlog.Logger) (store.Store, e
 		return nil, err
 	}
 	return db, nil
+}
+
+func (s *Server) Start() error {
+	s.logger.Info("Server.Start")
+
+	s.webServer.Start()
+
+	s.servicesStartStopMutex.Lock()
+	defer s.servicesStartStopMutex.Unlock()
+
+	return nil
+}
+
+func (s *Server) Shutdown() error {
+	if err := s.webServer.Shutdown(); err != nil {
+		return err
+	}
+
+	s.servicesStartStopMutex.Lock()
+	defer s.servicesStartStopMutex.Unlock()
+
+	//s.app.Shutdown()
+
+	defer s.logger.Info("Server.Shutdown")
+
+	//return s.store.Shutdown()
+	return nil
 }
 
 func (s *Server) Config() *config.Configuration {
