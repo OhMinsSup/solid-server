@@ -79,7 +79,7 @@ func (a *API) panicHandler(next http.Handler) http.Handler {
 					mlog.String("stack", string(debug.Stack())),
 					mlog.String("uri", r.URL.Path),
 				)
-				// a.errorResponse(w, r.URL.Path, http.StatusInternalServerError, "", nil)
+				a.errorResponse(w, r.URL.Path, http.StatusInternalServerError, "", nil)
 			}
 		}()
 		next.ServeHTTP(w, r)

@@ -11,6 +11,9 @@ import (
 )
 
 type Store interface {
+	// database
+	Shutdown() error
+
 	// session
 	GetActiveUserCount(updatedSecondsAgo int64) (int, error)
 	GetSession(token string, expireTime int64) (*model.Session, error)
@@ -21,10 +24,19 @@ type Store interface {
 	CleanUpSessions(expireTime int64) error
 
 	// user
+	GetUserByID(userID string) (*model.User, error)
+	GetUserByEmail(email string) (*model.User, error)
+	GetUserByUsername(username string) (*model.User, error)
 	CreateUser(user *model.User) error
 
 	// etc
 	DBType() string
+}
+
+// ErrNotFound 는 쿼리가 예기치 않게 레코드를 가져오지 않을 때 스토어
+// API 에서 반환할 수 있는 오류 유형입니다.
+type ErrNotFound struct {
+	resource string
 }
 
 
@@ -34,13 +46,6 @@ func NewErrNotFound(resource string) *ErrNotFound {
 		resource: resource,
 	}
 }
-
-// ErrNotFound 는 쿼리가 예기치 않게 레코드를 가져오지 않을 때 스토어
-// API 에서 반환할 수 있는 오류 유형입니다.
-type ErrNotFound struct {
-	resource string
-}
-
 
 func (nf *ErrNotFound) Error() string {
 	return fmt.Sprintf("{%s} not found", nf.resource)

@@ -114,10 +114,6 @@ func main() {
 		monitorPid(*pMonitorPid, logger)
 	}
 
-	if pMonitorPid != nil && *pMonitorPid > 0 {
-		monitorPid(*pMonitorPid, logger)
-	}
-
 	if pDBType != nil && len(*pDBType) > 0 {
 		config.DBType = *pDBType
 		logger.Info("DBType from commandline", mlog.String("DBType", *pDBType))
@@ -139,6 +135,8 @@ func main() {
 	if err != nil {
 		logger.Fatal("server.NewStore ERROR", mlog.Err(err))
 	}
+
+	// permission services
 
 	params := server.Params{
 		Cfg:                config,

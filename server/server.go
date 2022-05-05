@@ -3,28 +3,47 @@ package server
 import (
 	"database/sql"
 	"github.com/gorilla/mux"
+	"github.com/mattermost/mattermost-server/v6/audit"
 	"github.com/mattermost/mattermost-server/v6/shared/mlog"
 	"net/http"
+	"solid-server/api"
 	"solid-server/app"
 	"solid-server/services/config"
 	"solid-server/services/store"
 	"solid-server/services/store/sqlstore"
 	"solid-server/web"
 	"sync"
+	"time"
+)
+
+const (
+	cleanupSessionTaskFrequency = 10 * time.Minute
+	updateMetricsTaskFrequency  = 15 * time.Minute
+
+	minSessionExpiryTime = int64(60 * 60 * 24 * 31) // 31 days
 )
 
 type Server struct {
-	config    *config.Configuration
-	webServer *web.Server
-	store     store.Store
-	logger    *mlog.Logger
+	config       *config.Configuration
+	wsAdapter    interface{} // TODO: Add WebSocket adapter
+	webServer    *web.Server
+	store        store.Store
+	filesBackend interface{} // TODO: Add FilesBackend
+	telemetry    interface{} // TODO: Add Telemetry
+	logger       *mlog.Logger
 
+	cleanUpSessionsTask    interface{} // TODO: Add CleanUpSessionsTask
+	metricsServer          interface{} // TODO: Add MetricsServer
+	metricsService         interface{} // TODO: Add MetricsService
+	metricsUpdaterTask     interface{} // TODO: Add MetricsUpdaterTask
+	auditService           interface{} // TODO: Add AuditService
+	notificationService    interface{} // TODO: Add NotificationService
 	servicesStartStopMutex sync.Mutex
 
 	localRouter     *mux.Router
 	localModeServer *http.Server
-
-	app *app.App
+	api             interface{} // TODO: Add API interface
+	app             *app.App
 }
 
 func New(params Params) (*Server, error) {
@@ -38,9 +57,15 @@ func New(params Params) (*Server, error) {
 	}
 	app := app.New(params.Cfg, appServices)
 
+	var permissions interface {}
+	var audits *audit.Audit
+	solidAPI := api.NewAPI(app, params.SingleUserToken, params.Cfg.AuthMode, permissions, params.Logger, audits)
+
 	// server
 	webServer := web.NewServer(params.Cfg.WebPath, params.Cfg.ServerRoot, params.Cfg.Port,
 		params.Cfg.UseSSL, params.Cfg.LocalOnly, params.Logger)
+
+	webServer.AddRoutes(solidAPI)
 
 	server := Server{
 		config:    params.Cfg,
@@ -102,12 +127,11 @@ func (s *Server) Shutdown() error {
 	s.servicesStartStopMutex.Lock()
 	defer s.servicesStartStopMutex.Unlock()
 
-	//s.app.Shutdown()
+	s.app.Shutdown()
 
 	defer s.logger.Info("Server.Shutdown")
 
-	//return s.store.Shutdown()
-	return nil
+	return s.store.Shutdown()
 }
 
 func (s *Server) Config() *config.Configuration {

@@ -2,10 +2,31 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"solid-server/services/auth"
 	"strings"
 )
+
+const (
+	MinimumPasswordLength = 8
+)
+
+type ParamError struct {
+	msg string
+}
+
+func (pe ParamError) Error() string {
+	return pe.msg
+}
+
+func isValidPassword(password string) error {
+	if len(password) < MinimumPasswordLength {
+		return ParamError{fmt.Sprintf("password must be at least %d characters", MinimumPasswordLength)}
+	}
+	return nil
+}
 
 // RegisterRequest is a user registration request
 // swagger:model
@@ -25,6 +46,22 @@ type RegisterRequest struct {
 	// Registration authorization token
 	// required: true
 	Token string `json:"token"`
+}
+
+func (rd *RegisterRequest) IsValid() error {
+	if strings.TrimSpace(rd.Username) == "" {
+		return ParamError{"username is required"}
+	}
+	if strings.TrimSpace(rd.Email) == "" {
+		return ParamError{"email is required"}
+	}
+	if !auth.IsEmailValid(rd.Email) {
+		return ParamError{"invalid email format"}
+	}
+	if rd.Password == "" {
+		return ParamError{"password is required"}
+	}
+	return isValidPassword(rd.Password)
 }
 
 func (a *API) handleRegister(w http.ResponseWriter, r *http.Request) {
@@ -77,6 +114,12 @@ func (a *API) handleRegister(w http.ResponseWriter, r *http.Request) {
 		// TODO: Token Regiser
 	} else {
 		// 해당 토큰이 존재하는 경우 해당 토큰으로 가입한 유저가 있는지 체크
+	}
+
+	err = a.app.RegisterUser(registerData.Username, registerData.Email, registerData.Password)
+	if err != nil {
+		a.errorResponse(w, r.URL.Path, http.StatusBadRequest, err.Error(), err)
+		return
 	}
 
 	jsonStringResponse(w, http.StatusOK, "{}")

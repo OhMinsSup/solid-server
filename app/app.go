@@ -33,6 +33,11 @@ func (a *App) GetConfig() *config.Configuration {
 	return a.config
 }
 
+func (a *App) Shutdown() {
+	a.logger.Info("Shutting down")
+	// TODO: actually shutdown
+}
+
 func New(config *config.Configuration, services Services) *App {
 	app := &App{
 		config: config,
