@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
-	"github.com/mattermost/mattermost-server/v6/audit"
 	"github.com/mattermost/mattermost-server/v6/shared/mlog"
 	"net/http"
 	"runtime/debug"
 	"solid-server/app"
 	"solid-server/model"
+	"solid-server/services/audit"
 	"solid-server/utils"
 )
 
@@ -62,6 +62,7 @@ func (a *API) RegisterRoutes(r *mux.Router) {
 	apiv1.Use(a.requireCSRFToken)
 
 	// Auth APIs
+	apiv1.HandleFunc("/login", a.handleLogin).Methods("POST")
 	apiv1.HandleFunc("/register", a.handleRegister).Methods("POST")
 }
 

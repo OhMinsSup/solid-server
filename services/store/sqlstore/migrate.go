@@ -1,14 +1,22 @@
 package sqlstore
 
 import (
+	"bytes"
+	"context"
 	"database/sql"
 	"embed"
+	"errors"
 	"fmt"
-	"github.com/mattermost/morph/drivers"
-	"github.com/mattermost/morph/drivers/mysql"
-	"github.com/mattermost/morph/drivers/postgres"
-	"github.com/mattermost/morph/drivers/sqlite"
-	"log"
+	"github.com/mattermost/mattermost-plugin-api/cluster"
+	"github.com/mattermost/morph"
+	"text/template"
+
+	drivers "github.com/mattermost/morph/drivers"
+	mysql "github.com/mattermost/morph/drivers/mysql"
+	postgres "github.com/mattermost/morph/drivers/postgres"
+	sqlite "github.com/mattermost/morph/drivers/sqlite"
+	embedded "github.com/mattermost/morph/sources/embedded"
+
 	"solid-server/model"
 )
 
@@ -16,8 +24,15 @@ import (
 var assets embed.FS
 
 const (
+	uniqueIDsMigrationRequiredVersion      = 14
+	teamsAndBoardsMigrationRequiredVersion = 17
 
+	teamLessBoardsMigrationKey = "TeamLessBoardsMigrationComplete"
+
+	tempSchemaMigrationTableName = "temp_schema_migration"
 )
+
+var errChannelCreatorNotInTeam = errors.New("channel creator not found in user teams")
 
 // MySQL의 마이그레이션은 multiStatements 플래그로 실행해야 합니다.
 // 활성화되어 있으므로 이 메서드는 새 연결을 생성하여
@@ -97,7 +112,62 @@ func (s *SQLStore) Migrate() error {
 		"plugin":   s.isPlugin,
 	}
 
-	log.Println("Migrating database schema to version", params, driver)
+	migrationAssets := &embedded.AssetSource{
+		Names: assetNamesForDriver,
+		AssetFunc: func(name string) ([]byte, error) {
+			asset, mErr := assets.ReadFile("migrations/" + name)
+			if mErr != nil {
+				return nil, mErr
+			}
 
-	return nil
+			tmpl, pErr := template.New("sql").Parse(string(asset))
+			if pErr != nil {
+				return nil, pErr
+			}
+			buffer := bytes.NewBufferString("")
+
+			err = tmpl.Execute(buffer, params)
+			if err != nil {
+				return nil, err
+			}
+
+			return buffer.Bytes(), nil
+		},
+	}
+
+	src, err := embedded.WithInstance(migrationAssets)
+	if err != nil {
+		return err
+	}
+
+
+	opts := []morph.EngineOption{
+		morph.WithLock("mm-lock-key"),
+	}
+
+	if s.dbType == model.SqliteDBType {
+		opts = opts[:0] // sqlite driver does not support locking, it doesn't need to anyway.
+	}
+
+	engine, err := morph.New(context.Background(), driver, src, opts...)
+	if err != nil {
+		return err
+	}
+	defer engine.Close()
+
+	var mutex *cluster.Mutex
+	if s.isPlugin {
+		var mutexErr error
+		mutex, mutexErr = s.NewMutexFn("Boards_dbMutex")
+		if mutexErr != nil {
+			return fmt.Errorf("error creating database mutex: %w", mutexErr)
+		}
+	}
+
+	if s.isPlugin {
+		s.logger.Debug("Acquiring cluster lock for Unique IDs migration")
+		mutex.Lock()
+	}
+
+	return engine.ApplyAll()
 }

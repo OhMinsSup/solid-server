@@ -2,7 +2,6 @@ package config
 
 import (
 	"github.com/spf13/viper"
-	"log"
 )
 
 const (
@@ -99,9 +98,6 @@ func ReadConfigFile(configFilePath string)  (*Configuration, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	log.Println("readConfigFile")
-	log.Printf("%+v", removeSecurityData(configuration))
 
 	return &configuration, nil
 }

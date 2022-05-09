@@ -3,11 +3,11 @@ package server
 import (
 	"database/sql"
 	"github.com/gorilla/mux"
-	"github.com/mattermost/mattermost-server/v6/audit"
 	"github.com/mattermost/mattermost-server/v6/shared/mlog"
 	"net/http"
 	"solid-server/api"
 	"solid-server/app"
+	"solid-server/services/audit"
 	"solid-server/services/config"
 	"solid-server/services/store"
 	"solid-server/services/store/sqlstore"

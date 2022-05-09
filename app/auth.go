@@ -3,6 +3,7 @@ package app
 import (
 	"solid-server/model"
 	"solid-server/services/auth"
+	"solid-server/utils"
 
 	"github.com/pkg/errors"
 )
@@ -41,6 +42,20 @@ func (a *App) RegisterUser(username, email, password string) error {
 	err := auth.IsPasswordValid(password, passwordSettings)
 	if err != nil {
 		return errors.Wrap(err, "Invalid password")
+	}
+
+	err = a.store.CreateUser(&model.User{
+		ID:          utils.NewID(utils.IDTypeUser),
+		Username:    username,
+		Email:       email,
+		Password:    auth.HashPassword(password),
+		MfaSecret:   "",
+		AuthService: a.config.AuthMode,
+		AuthData:    "",
+		Props:       map[string]interface{}{},
+	})
+	if err != nil {
+		return errors.Wrap(err, "Unable to create the new user")
 	}
 
 	return nil
