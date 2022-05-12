@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"solid-server/services/auth"
@@ -28,7 +29,7 @@ func isValidPassword(password string) error {
 	return nil
 }
 
-// LoginRequest is a login request
+// LoginRequest 로그인 요청 Body
 // swagger:model
 type LoginRequest struct {
 	// Type of login, currently must be set to "normal"
@@ -53,7 +54,23 @@ type LoginRequest struct {
 	MfaToken string `json:"mfa_token"`
 }
 
-// RegisterRequest is a user registration request
+// LoginResponse 로그인 Response
+// swagger:model
+type LoginResponse struct {
+	// Session token
+	// required: true
+	Token string `json:"token"`
+}
+
+func LoginResponseFromJSON(data io.Reader) (*LoginResponse, error) {
+	var resp LoginResponse
+	if err := json.NewDecoder(data).Decode(&resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// RegisterRequest 회원가입 요청 Body
 // swagger:model
 type RegisterRequest struct {
 	// User name
@@ -136,7 +153,23 @@ func (a *API) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	return
+	if loginData.Type == "normal" {
+		token, err := a.app.Login(loginData.Username, loginData.Email, loginData.Password, loginData.MfaToken)
+		if err != nil {
+			a.errorResponse(w, r.URL.Path, http.StatusUnauthorized, "incorrect login", err)
+			return
+		}
+		json, err := json.Marshal(LoginResponse{Token: token})
+		if err != nil {
+			a.errorResponse(w, r.URL.Path, http.StatusInternalServerError, "", err)
+			return
+		}
+
+		jsonBytesResponse(w, http.StatusOK, json)
+		return
+	}
+
+	a.errorResponse(w, r.URL.Path, http.StatusBadRequest, "invalid login type", nil)
 }
 
 func (a *API) handleRegister(w http.ResponseWriter, r *http.Request) {
@@ -189,6 +222,15 @@ func (a *API) handleRegister(w http.ResponseWriter, r *http.Request) {
 		// TODO: Token Regiser
 	} else {
 		// 해당 토큰이 존재하는 경우 해당 토큰으로 가입한 유저가 있는지 체크
+		userCount, err2 := a.app.GetRegisteredUserCount()
+		if err2 != nil {
+			a.errorResponse(w, r.URL.Path, http.StatusInternalServerError, "", err2)
+			return
+		}
+		if userCount > 0 {
+			a.errorResponse(w, r.URL.Path, http.StatusUnauthorized, "no sign-up token and user(s) already exist", nil)
+			return
+		}
 	}
 
 	err = a.app.RegisterUser(registerData.Username, registerData.Email, registerData.Password)
@@ -198,5 +240,4 @@ func (a *API) handleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jsonStringResponse(w, http.StatusOK, "{}")
-	//auditRec.Success()
 }

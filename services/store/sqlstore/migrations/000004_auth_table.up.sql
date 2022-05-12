@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS {{.prefix}}sessions (
     id VARCHAR(100),
     token VARCHAR(100),
     user_id VARCHAR(100),
+    auth_service VARCHAR(20),
     props       {{if .postgres}}JSON{{else}}TEXT{{end}},
     create_at    BIGINT,
     update_at    BIGINT,

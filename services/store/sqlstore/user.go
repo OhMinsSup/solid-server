@@ -18,7 +18,7 @@ func (unf UserNotFoundError) Error() string {
 	return fmt.Sprintf("user not found (%s)", unf.id)
 }
 
-func (s *SQLStore) getRegisteredUser(db sq.BaseRunner) (int, error) {
+func (s *SQLStore) getRegisteredUserCount(db sq.BaseRunner) (int, error) {
 	query := s.getQueryBuilder(db).
 		Select("count(*)").
 		From(s.tablePrefix + "users").

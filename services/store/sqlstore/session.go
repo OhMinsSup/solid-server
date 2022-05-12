@@ -60,7 +60,7 @@ func (s *SQLStore) createSession(db sq.BaseRunner, session *model.Session) error
 	}
 
 	query := s.getQueryBuilder(db).Insert(s.tablePrefix+"sessions").
-		Columns("id", "token", "user_id", "props", "create_at", "update_at").
+		Columns("id", "token", "user_id", "auth_service", "props", "create_at", "update_at").
 		Values(session.ID, session.Token, session.UserID, session.AuthService, propsBytes, now, now)
 
 	_, err = query.Exec()

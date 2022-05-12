@@ -15,7 +15,7 @@ type Store interface {
 	Shutdown() error
 
 	// session
-	GetActiveUserCount(updatedSecondsAgo int64) (int, error)
+	GetRegisteredUserCount() (int, error)
 	GetSession(token string, expireTime int64) (*model.Session, error)
 	CreateSession(session *model.Session) error
 	RefreshSession(session *model.Session) error

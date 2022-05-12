@@ -4,8 +4,8 @@ import "solid-server/model"
 
 // session
 
-func (s *SQLStore) GetActiveUserCount(updatedSecondsAgo int64) (int, error) {
-	return s.getActiveUserCount(s.db, updatedSecondsAgo)
+func (s *SQLStore) GetRegisteredUserCount() (int, error) {
+	return s.getRegisteredUserCount(s.db)
 }
 
 func (s *SQLStore) GetSession(token string, expireTime int64) (*model.Session, error) {
