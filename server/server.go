@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"solid-server/api"
 	"solid-server/app"
-	"solid-server/services/audit"
 	"solid-server/services/config"
 	"solid-server/services/store"
 	"solid-server/services/store/sqlstore"
@@ -36,7 +35,6 @@ type Server struct {
 	metricsServer          interface{} // TODO: Add MetricsServer
 	metricsService         interface{} // TODO: Add MetricsService
 	metricsUpdaterTask     interface{} // TODO: Add MetricsUpdaterTask
-	auditService           interface{} // TODO: Add AuditService
 	notificationService    interface{} // TODO: Add NotificationService
 	servicesStartStopMutex sync.Mutex
 
@@ -57,9 +55,8 @@ func New(params Params) (*Server, error) {
 	}
 	app := app.New(params.Cfg, appServices)
 
-	var permissions interface {}
-	var audits *audit.Audit
-	solidAPI := api.NewAPI(app, params.SingleUserToken, params.Cfg.AuthMode, permissions, params.Logger, audits)
+	var permissions interface{}
+	solidAPI := api.NewAPI(app, params.SingleUserToken, params.Cfg.AuthMode, permissions, params.Logger)
 
 	// server
 	webServer := web.NewServer(params.Cfg.WebPath, params.Cfg.ServerRoot, params.Cfg.Port,

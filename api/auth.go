@@ -136,10 +136,6 @@ func (a *API) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//auditRec := a.makeAuditRecord(r, "login", audit.Fail)
-	//defer a.audit.LogRecord(audit.LevelAuth, auditRec)
-	//auditRec.AddMeta("username", loginData.Username)
-	//auditRec.AddMeta("type", loginData.Type)
 	return
 }
 
@@ -194,10 +190,6 @@ func (a *API) handleRegister(w http.ResponseWriter, r *http.Request) {
 	} else {
 		// 해당 토큰이 존재하는 경우 해당 토큰으로 가입한 유저가 있는지 체크
 	}
-
-	//auditRec := a.makeAuditRecord(r, "register", audit.Fail)
-	//defer a.audit.LogRecord(audit.LevelAuth, auditRec)
-	//auditRec.AddMeta("username", registerData.Username)
 
 	err = a.app.RegisterUser(registerData.Username, registerData.Email, registerData.Password)
 	if err != nil {

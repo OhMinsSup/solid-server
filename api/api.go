@@ -9,7 +9,6 @@ import (
 	"runtime/debug"
 	"solid-server/app"
 	"solid-server/model"
-	"solid-server/services/audit"
 	"solid-server/utils"
 )
 
@@ -41,18 +40,16 @@ type API struct {
 	singleUserToken string
 	SolidAuth       bool
 	logger          *mlog.Logger
-	audit           *audit.Audit
 }
 
 func NewAPI(app *app.App, singleUserToken string, authService string, permissions interface{},
-	logger *mlog.Logger, audit *audit.Audit) *API {
+	logger *mlog.Logger) *API {
 	return &API{
 		app:             app,
 		authService:     authService,
 		premissions:     permissions,
 		singleUserToken: singleUserToken,
 		logger:          logger,
-		audit:           audit,
 	}
 }
 
