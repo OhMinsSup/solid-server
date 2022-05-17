@@ -209,7 +209,6 @@ func (a *API) handleRegister(w http.ResponseWriter, r *http.Request) {
 
 	var registerData RegisterRequest
 	err = json.Unmarshal(requestBody, &registerData)
-	err = json.Unmarshal(requestBody, &registerData)
 	if err != nil {
 		a.errorResponse(w, r.URL.Path, http.StatusInternalServerError, "", err)
 		return
@@ -219,7 +218,16 @@ func (a *API) handleRegister(w http.ResponseWriter, r *http.Request) {
 
 	// Validate Token
 	if len(registerData.Token) > 0 {
-		// TODO: Token Regiser
+		team, err2 := a.app.GetRootTeam()
+		if err2 != nil {
+			a.errorResponse(w, r.URL.Path, http.StatusInternalServerError, "", err2)
+			return
+		}
+
+		if registerData.Token != team.SignupToken {
+			a.errorResponse(w, r.URL.Path, http.StatusUnauthorized, "invalid token", nil)
+			return
+		}
 	} else {
 		// 해당 토큰이 존재하는 경우 해당 토큰으로 가입한 유저가 있는지 체크
 		userCount, err2 := a.app.GetRegisteredUserCount()

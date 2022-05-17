@@ -51,3 +51,13 @@ func (s *SQLStore) GetUserByUsername(username string) (*model.User, error) {
 func (s *SQLStore) CreateUser(user *model.User) error {
 	return s.createUser(s.db, user)
 }
+
+// team
+
+func (s *SQLStore) GetTeam(ID string) (*model.Team, error) {
+	return s.getTeam(s.db, ID)
+}
+
+func (s *SQLStore) UpsertTeamSignupToken(team model.Team) error {
+	return s.upsertTeamSignupToken(s.db, team)
+}

@@ -29,6 +29,10 @@ type Store interface {
 	GetUserByUsername(username string) (*model.User, error)
 	CreateUser(user *model.User) error
 
+	// team
+	GetTeam(ID string) (*model.Team, error)
+	UpsertTeamSignupToken(team model.Team) error
+
 	// etc
 	DBType() string
 }
