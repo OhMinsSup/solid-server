@@ -38,6 +38,7 @@ type Configuration struct {
 	Secret                   string            `json:"secret" mapstructure:"secret"`
 	SessionExpireTime        int64             `json:"session_expire_time" mapstructure:"session_expire_time"`
 	SessionRefreshTime       int64             `json:"session_refresh_time" mapstructure:"session_refresh_time"`
+	SessionSecretKey         string            `json:"session_secret_key" mapstructure:"session_secret_key"`
 	LocalOnly                bool              `json:"localonly" mapstructure:"localonly"`
 	EnableLocalMode          bool              `json:"enableLocalMode" mapstructure:"enableLocalMode"`
 	LocalModeSocketLocation  string            `json:"localModeSocketLocation" mapstructure:"localModeSocketLocation"`
@@ -54,7 +55,7 @@ type Configuration struct {
 }
 
 // ReadConfigFile 은 파일 시스템에서 구성을 읽습니다.
-func ReadConfigFile(configFilePath string)  (*Configuration, error) {
+func ReadConfigFile(configFilePath string) (*Configuration, error) {
 	if configFilePath == "" {
 		viper.SetConfigFile("./config.json")
 	} else {
@@ -75,8 +76,9 @@ func ReadConfigFile(configFilePath string)  (*Configuration, error) {
 	viper.SetDefault("Telemetry", true)
 	viper.SetDefault("TelemetryID", "")
 	viper.SetDefault("WebhookUpdate", nil)
-	viper.SetDefault("SessionExpireTime", 60*60*24*30) // 30 days session lifetime
+	viper.SetDefault("SessionExpireTime",  60*60*24*30) // 30 days session lifetime
 	viper.SetDefault("SessionRefreshTime", 60*60*5)    // 5 minutes session refresh
+	viper.SetDefault("SessionSecretKey", "4qUMElHAy6J7ZD9nJCQTbhxIwbAyy7vp")
 	viper.SetDefault("LocalOnly", false)
 	viper.SetDefault("EnableLocalMode", false)
 	viper.SetDefault("LocalModeSocketLocation", "/var/tmp/solid_local.socket")

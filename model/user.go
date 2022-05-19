@@ -75,17 +75,6 @@ type UserPropPatch struct {
 	DeletedFields []string `json:"deletedFields"`
 }
 
-// Session 세션 정보
-type Session struct {
-	ID          string                 `json:"id"`
-	Token       string                 `json:"token"`
-	UserID      string                 `json:"user_id"`
-	AuthService string                 `json:"authService"`
-	Props       map[string]interface{} `json:"props"`
-	CreateAt    int64                  `json:"create_at,omitempty"`
-	UpdateAt    int64                  `json:"update_at,omitempty"`
-}
-
 // UserFormJSON 유저 폼 JSON
 func UserFormJSON(data io.Reader) (*User, error) {
 	var user User

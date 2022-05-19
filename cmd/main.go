@@ -59,7 +59,6 @@ func logInfo(logger *mlog.Logger) {
 func main() {
 	pMonitorPid := flag.Int("monitorpid", -1, "a process ID")
 	pPort := flag.Int("port", 0, "the port number")
-	pSingleUser := flag.Bool("single-user", false, "single user mode")
 	pDBType := flag.String("dbtype", "", "Database type")
 	pDBConfig := flag.String("dbconfig", "", "Database config")
 	pConfigFilePath := flag.String(
@@ -95,21 +94,6 @@ func main() {
 
 	logInfo(logger)
 
-	singleUser := false
-	if pSingleUser != nil {
-		singleUser = *pSingleUser
-	}
-
-	singleUserToken := ""
-	if singleUser {
-		singleUserToken = os.Getenv("SOILD_SINGLE_USER_TOKEN")
-		if len(singleUserToken) < 1 {
-			logger.Fatal("The SOILD_SINGLE_USER_TOKEN environment variable must be set for single user mode ")
-			return
-		}
-		logger.Info("Single user mode")
-	}
-
 	if pMonitorPid != nil && *pMonitorPid > 0 {
 		monitorPid(*pMonitorPid, logger)
 	}
@@ -140,7 +124,6 @@ func main() {
 
 	params := server.Params{
 		Cfg:                config,
-		SingleUserToken:    singleUserToken,
 		DBStore:            db,
 		Logger:             logger,
 	}

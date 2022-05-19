@@ -134,12 +134,6 @@ func (a *API) handleLogin(w http.ResponseWriter, r *http.Request) {
 	//     description: internal error
 	//     schema:
 	//       "$ref": "#/definitions/ErrorResponse"
-	if len(a.singleUserToken) > 0 {
-		// Not permitted in single-user mode
-		a.errorResponse(w, r.URL.Path, http.StatusUnauthorized, "not permitted in single-user mode", nil)
-		return
-	}
-
 	requestBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		a.errorResponse(w, r.URL.Path, http.StatusInternalServerError, "", err)
@@ -196,11 +190,6 @@ func (a *API) handleRegister(w http.ResponseWriter, r *http.Request) {
 	//     description: internal error
 	//     schema:
 	//       "$ref": "#/definitions/ErrorResponse"
-	if len(a.singleUserToken) > 0 {
-		a.errorResponse(w, r.URL.Path, http.StatusUnauthorized, "not permitted in single-user mode", nil)
-		return
-	}
-
 	requestBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		a.errorResponse(w, r.URL.Path, http.StatusInternalServerError, "failed to read request body", err)
@@ -215,31 +204,6 @@ func (a *API) handleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 	registerData.Email = strings.TrimSpace(registerData.Email)
 	registerData.Username = strings.TrimSpace(registerData.Username)
-
-	// Validate Token
-	if len(registerData.Token) > 0 {
-		team, err2 := a.app.GetRootTeam()
-		if err2 != nil {
-			a.errorResponse(w, r.URL.Path, http.StatusInternalServerError, "", err2)
-			return
-		}
-
-		if registerData.Token != team.SignupToken {
-			a.errorResponse(w, r.URL.Path, http.StatusUnauthorized, "invalid token", nil)
-			return
-		}
-	} else {
-		// 해당 토큰이 존재하는 경우 해당 토큰으로 가입한 유저가 있는지 체크
-		userCount, err2 := a.app.GetRegisteredUserCount()
-		if err2 != nil {
-			a.errorResponse(w, r.URL.Path, http.StatusInternalServerError, "", err2)
-			return
-		}
-		if userCount > 0 {
-			a.errorResponse(w, r.URL.Path, http.StatusUnauthorized, "no sign-up token and user(s) already exist", nil)
-			return
-		}
-	}
 
 	err = a.app.RegisterUser(registerData.Username, registerData.Email, registerData.Password)
 	if err != nil {

@@ -14,16 +14,8 @@ type Store interface {
 	// database
 	Shutdown() error
 
-	// session
-	GetRegisteredUserCount() (int, error)
-	GetSession(token string, expireTime int64) (*model.Session, error)
-	CreateSession(session *model.Session) error
-	RefreshSession(session *model.Session) error
-	UpdateSession(session *model.Session) error
-	DeleteSession(sessionID string) error
-	CleanUpSessions(expireTime int64) error
-
 	// user
+	GetRegisteredUserCount() (int, error)
 	GetUserByID(userID string) (*model.User, error)
 	GetUserByEmail(email string) (*model.User, error)
 	GetUserByUsername(username string) (*model.User, error)

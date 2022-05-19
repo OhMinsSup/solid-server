@@ -37,18 +37,16 @@ type API struct {
 	app             *app.App
 	authService     string
 	premissions     interface{}
-	singleUserToken string
 	SolidAuth       bool
 	logger          *mlog.Logger
 }
 
-func NewAPI(app *app.App, singleUserToken string, authService string, permissions interface{},
+func NewAPI(app *app.App, authService string, permissions interface{},
 	logger *mlog.Logger) *API {
 	return &API{
 		app:             app,
 		authService:     authService,
 		premissions:     permissions,
-		singleUserToken: singleUserToken,
 		logger:          logger,
 	}
 }
@@ -59,8 +57,8 @@ func (a *API) RegisterRoutes(r *mux.Router) {
 	apiv1.Use(a.requireCSRFToken)
 
 	// Auth APIs
-	apiv1.HandleFunc("/login", a.handleLogin).Methods("POST")
-	apiv1.HandleFunc("/register", a.handleRegister).Methods("POST")
+	apiv1.HandleFunc("/auth/login", a.handleLogin).Methods("POST")
+	apiv1.HandleFunc("/auth/register", a.handleRegister).Methods("POST")
 }
 
 func (a *API) checkCSRFToken(r *http.Request) bool {

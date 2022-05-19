@@ -59,21 +59,14 @@ func (a *App) Login(username, email, password, mfaToken string) (string, error) 
 		authService = "native"
 	}
 
-	session := model.Session{
-		ID:          utils.NewID(utils.IDTypeSession),
-		Token:       utils.NewID(utils.IDTypeToken),
-		UserID:      user.ID,
-		AuthService: authService,
-		Props:       map[string]interface{}{},
+	accessToken, err := a.auth.CreateAccessToken(user.ID)
+	if err != nil {
+		return "", errors.Wrap(err, "Unable to create access token")
 	}
 
-	err := a.store.CreateSession(&session)
-	if err != nil {
-		return "", errors.Wrap(err, "unable to create session")
-	}
 	// TODO: metrics
 	// TODO: MFA verification
-	return session.Token, nil
+	return accessToken, nil
 }
 
 // RegisterUser 제공된 데이터가 유효한 경우 새 사용자를 생성

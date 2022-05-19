@@ -11,15 +11,4 @@ CREATE TABLE IF NOT EXISTS {{.prefix}}users (
     update_at    BIGINT,
     delete_at    BIGINT,
     PRIMARY KEY (id)
-    ) {{if .mysql}}DEFAULT CHARACTER SET utf8mb4{{end}};
-
-CREATE TABLE IF NOT EXISTS {{.prefix}}sessions (
-    id VARCHAR(100),
-    token VARCHAR(100),
-    user_id VARCHAR(100),
-    auth_service VARCHAR(20),
-    props       {{if .postgres}}JSON{{else}}TEXT{{end}},
-    create_at    BIGINT,
-    update_at    BIGINT,
-    PRIMARY KEY (id)
-    ) {{if .mysql}}DEFAULT CHARACTER SET utf8mb4{{end}};
+) {{if .mysql}}DEFAULT CHARACTER SET utf8mb4{{end}};

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"solid-server/api"
 	"solid-server/app"
+	"solid-server/services/auth"
 	"solid-server/services/config"
 	"solid-server/services/store"
 	"solid-server/services/store/sqlstore"
@@ -40,7 +41,7 @@ type Server struct {
 
 	localRouter     *mux.Router
 	localModeServer *http.Server
-	api             interface{} // TODO: Add API interface
+	api             *api.API
 	app             *app.App
 }
 
@@ -49,14 +50,17 @@ func New(params Params) (*Server, error) {
 		return nil, err
 	}
 
+	var permissions interface{}
+	authenticator := auth.New(params.Cfg, params.DBStore, permissions)
+
 	appServices := app.Services{
+		Auth:   authenticator,
 		Store:  params.DBStore,
 		Logger: params.Logger,
 	}
 	app := app.New(params.Cfg, appServices)
 
-	var permissions interface{}
-	solidAPI := api.NewAPI(app, params.SingleUserToken, params.Cfg.AuthMode, permissions, params.Logger)
+	solidAPI := api.NewAPI(app, params.Cfg.AuthMode, permissions, params.Logger)
 
 	// server
 	webServer := web.NewServer(params.Cfg.WebPath, params.Cfg.ServerRoot, params.Cfg.Port,
