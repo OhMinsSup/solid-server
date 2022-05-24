@@ -56,23 +56,28 @@ func (a *Auth) CreateAccessToken(userId string) (string, error) {
 	return ss, nil
 }
 
-func (a *Auth) VerifyAccessToken(token string) (*DecodedToken, error) {
-	clamis := jwt.MapClaims{}
-	data, err := jwt.ParseWithClaims(token, &clamis, func(token *jwt.Token) (interface{}, error) {
+func (a *Auth) VerifyAccessToken(tokenString string) (*DecodedToken, error) {
+	type MyCustomClaims struct {
+		UserID string `json:"user_id"`
+		jwt.RegisteredClaims
+	}
+
+	token, err := jwt.ParseWithClaims(tokenString, &MyCustomClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(a.config.SessionSecretKey), nil
 	})
 
-	if err != nil {
-		return nil, err
+	if claims, ok := token.Claims.(*MyCustomClaims); ok && token.Valid {
+		return &DecodedToken{
+			UserID: claims.UserID,
+			Exp:    claims.ExpiresAt.Unix(),
+		}, nil
+	} else if errors.Is(err, jwt.ErrTokenMalformed) {
+		return nil, errors.Wrap(err, "That's not even a token")
+	} else if errors.Is(err, jwt.ErrTokenExpired) || errors.Is(err, jwt.ErrTokenNotValidYet) {
+		return nil, errors.Wrap(err, "Token is expired")
+	} else if errors.Is(err, jwt.ErrSignatureInvalid) {
+		return nil, errors.Wrap(err, "Token has invalid signature")
+	} else {
+		return nil, errors.Wrap(err, "Token is invalid")
 	}
-
-	if !data.Valid {
-		return nil, errors.New("invalid token")
-	}
-
-	result := DecodedToken{}
-	result.UserID = clamis["user_id"].(string)
-	result.Exp = clamis["exp"].(int64)
-
-	return &result, nil
 }

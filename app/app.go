@@ -35,6 +35,14 @@ func (a *App) GetConfig() *config.Configuration {
 	return a.config
 }
 
+func (a *App) GetAuth() *auth.Auth {
+	return a.auth
+}
+
+func (a *App) GetStore() store.Store {
+	return a.store
+}
+
 func (a *App) Shutdown() {
 	a.logger.Info("Shutting down")
 	// TODO: actually shutdown

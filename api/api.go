@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
@@ -9,6 +10,7 @@ import (
 	"runtime/debug"
 	"solid-server/app"
 	"solid-server/model"
+	"solid-server/services/auth"
 	"solid-server/utils"
 )
 
@@ -34,20 +36,19 @@ func (p Permission) Error() string {
 // REST APIs
 
 type API struct {
-	app             *app.App
-	authService     string
-	premissions     interface{}
-	SolidAuth       bool
-	logger          *mlog.Logger
+	app         *app.App
+	authService string
+	premissions interface{}
+	logger      *mlog.Logger
 }
 
 func NewAPI(app *app.App, authService string, permissions interface{},
 	logger *mlog.Logger) *API {
 	return &API{
-		app:             app,
-		authService:     authService,
-		premissions:     permissions,
-		logger:          logger,
+		app:         app,
+		authService: authService,
+		premissions: permissions,
+		logger:      logger,
 	}
 }
 
@@ -59,6 +60,9 @@ func (a *API) RegisterRoutes(r *mux.Router) {
 	// Auth APIs
 	apiv1.HandleFunc("/auth/login", a.handleLogin).Methods("POST")
 	apiv1.HandleFunc("/auth/register", a.handleRegister).Methods("POST")
+
+	// User APIs
+	apiv1.HandleFunc("/users/me", a.requiredAuth(a.handleUserMe)).Methods("GET")
 }
 
 func (a *API) checkCSRFToken(r *http.Request) bool {
@@ -92,6 +96,51 @@ func (a *API) requireCSRFToken(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+func (a *API) requiredAuth(handler func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
+	return a.authMiddleware(handler, true)
+}
+
+func (a *API) authMiddleware(handler func(w http.ResponseWriter, r *http.Request), required bool) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		token, _ := auth.ParseAuthTokenFromRequest(r)
+
+		a.logger.Debug(`attachAuthMiddleware`, mlog.Bool("accessToken", len(token) > 0))
+		decodeTokenData, _ := a.app.GetAuth().VerifyAccessToken(token)
+		if decodeTokenData == nil {
+			if required {
+				a.errorResponse(w, r.URL.Path, http.StatusUnauthorized, "Unauthorized", nil)
+				return
+			}
+			handler(w, r)
+			return
+		}
+
+	    user, err := a.app.GetUser(decodeTokenData.UserID)
+		if err != nil {
+			if required {
+				a.errorResponse(w, r.URL.Path, http.StatusUnauthorized, "", err)
+				return
+			}
+			handler(w, r)
+			return
+		}
+
+		authService := user.AuthService
+		if authService != a.authService {
+			a.logger.Error(`Session authService mismatch`,
+				mlog.String("userID", user.ID),
+				mlog.String("want", a.authService),
+				mlog.String("got", authService),
+			)
+			a.errorResponse(w, r.URL.Path, http.StatusUnauthorized, "", err)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), sessionContextKey, user)
+		handler(w, r.WithContext(ctx))
+	}
 }
 
 // Response helpers
