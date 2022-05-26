@@ -84,10 +84,6 @@ type RegisterRequest struct {
 	// Password
 	// required: true
 	Password string `json:"password"`
-
-	// Registration authorization token
-	// required: true
-	Token string `json:"token"`
 }
 
 func (rd *RegisterRequest) IsValid() error {
