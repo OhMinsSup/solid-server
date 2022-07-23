@@ -21,7 +21,8 @@ type Store interface {
 	CreateUser(user *model.User) error
 
 	// post
-	InsertPost(post model.Post, userId string) error
+	InsertPost(post *model.Post, userId string) error
+	GetSlugDuplicate(slug, userId string) error
 
 	// etc
 	DBType() string

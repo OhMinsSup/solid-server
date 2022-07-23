@@ -2,45 +2,11 @@ package api
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"solid-server/model"
+	"solid-server/services/types"
 )
-
-// CreatePostRequest 포스트 등록 요청 body
-
-type CreatePostRequest struct {
-	// Title Name
-	// required: true
-	Title string `json:"title"`
-
-	// Slug url path "ID" string
-	// required: false
-	Slug string `json:"slug"`
-
-	// SubTitle post sub title info
-	// required: false
-	SubTitle string `json:"sub_title"`
-
-	// Content post main content data
-	// required: true
-	Content string `json:"content"`
-
-	// Tags 포스트와 연관된 키워드
-	// required: false
-	Tags []string `json:"tags"`
-
-	// PublishingAt 포스트 공개일
-	// required: false
-	PublishingAt int64 `json:"publishing_at"`
-
-	// CoverImage 포스트 배경 이미지
-	// required: false
-	CoverImage string `json:"cover_image"`
-
-	// DisabledComment 댓글 작성 가능 여부
-	// required: false
-	DisabledComment bool `json:"disabled_comment"`
-}
 
 func (a *API) handleCreatePost(w http.ResponseWriter, r *http.Request) {
 	// swagger:operation Post /posts/ create post
@@ -73,11 +39,30 @@ func (a *API) handleCreatePost(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user := ctx.Value(sessionContextKey).(*model.User)
 
-	userData, err := json.Marshal(user)
+	_, err := json.Marshal(user)
 	if err != nil {
 		a.errorResponse(w, r.URL.Path, http.StatusInternalServerError, "", err)
 		return
 	}
 
-	jsonBytesResponse(w, http.StatusOK, userData)
+	requestBody, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		a.errorResponse(w, r.URL.Path, http.StatusInternalServerError, "failed to read request body", err)
+		return
+	}
+
+	var registerData types.CreatePostRequest
+	err = json.Unmarshal(requestBody, &registerData)
+	if err != nil {
+		a.errorResponse(w, r.URL.Path, http.StatusInternalServerError, "", err)
+		return
+	}
+
+	err = a.app.CreatePost(registerData, user.ID)
+	if err != nil {
+		a.errorResponse(w, r.URL.Path, http.StatusBadRequest, err.Error(), err)
+		return
+	}
+
+	jsonStringResponse(w, http.StatusOK, "{}")
 }

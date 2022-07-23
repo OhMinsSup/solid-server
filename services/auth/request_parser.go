@@ -6,10 +6,10 @@ import (
 )
 
 const (
-	HeaderToken        = "token"
-	HeaderAuth         = "Authorization"
-	HeaderBearer       = "BEARER"
-	AccessToken = "accessToken"
+	HeaderToken  = "token"
+	HeaderAuth   = "Authorization"
+	HeaderBearer = "BEARER"
+	AccessToken  = "auth_token"
 )
 
 type TokenLocation int

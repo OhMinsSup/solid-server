@@ -22,6 +22,10 @@ func (s *SQLStore) CreateUser(user *model.User) error {
 
 // post
 
-func (s *SQLStore) InsertPost(post model.Post, userId string) error {
+func (s *SQLStore) InsertPost(post *model.Post, userId string) error {
 	return s.insertPost(s.db, post, userId)
+}
+
+func (s *SQLStore) GetSlugDuplicate(slug, userId string) error {
+	return s.getSlugDuplicate(s.db, slug, userId)
 }

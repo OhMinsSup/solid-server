@@ -17,6 +17,7 @@ const (
 	IDTypeUser    IDType = 'u'
 	IDTypeToken   IDType = 'k'
 	IDTypeBlock   IDType = 'a'
+	IDTypePost    IDType = 'p'
 )
 
 // NewID 는 전역적으로 고유한 식별자입니다.
