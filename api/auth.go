@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"solid-server/services/auth"
 	"strings"
+	"time"
 )
 
 const (
@@ -146,7 +147,7 @@ func (a *API) handleLogin(w http.ResponseWriter, r *http.Request) {
 	if loginData.Type == "normal" {
 		token, err := a.app.Login(loginData.Username, loginData.Email, loginData.Password, loginData.MfaToken)
 		if err != nil {
-			a.errorResponse(w, r.URL.Path, http.StatusUnauthorized, "incorrect login", err)
+			a.errorResponse(w, r.URL.Path, http.StatusUnauthorized, err.Error(), err)
 			return
 		}
 		json, err := json.Marshal(LoginResponse{Token: token})
@@ -154,6 +155,24 @@ func (a *API) handleLogin(w http.ResponseWriter, r *http.Request) {
 			a.errorResponse(w, r.URL.Path, http.StatusInternalServerError, "", err)
 			return
 		}
+
+		// cookie will get expired after 1 days
+		expires := time.Now().AddDate(0, 0, 1)
+
+		ck := http.Cookie{
+			Name:     "auth_token",
+			Domain:   "localhost",
+			Path:     "/",
+			Expires:  expires,
+			HttpOnly: true,
+			SameSite: http.SameSiteLaxMode,
+		}
+
+		// value of cookie
+		ck.Value = token
+
+		// write the cookie to response
+		http.SetCookie(w, &ck)
 
 		jsonBytesResponse(w, http.StatusOK, json)
 		return

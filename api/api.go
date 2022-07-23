@@ -17,6 +17,7 @@ import (
 const (
 	HeaderRequestedWith    = "X-Requested-With"
 	HeaderRequestedWithXML = "XMLHttpRequest"
+	HeaderRequestedWithKy  = "ky"
 	UploadFormFileKey      = "file"
 )
 
@@ -63,11 +64,14 @@ func (a *API) RegisterRoutes(r *mux.Router) {
 
 	// User APIs
 	apiv1.HandleFunc("/users/me", a.requiredAuth(a.handleUserMe)).Methods("GET")
+
+	// Post APIs
+	apiv1.HandleFunc("/posts", a.requiredAuth(a.handleCreatePost)).Methods("POST")
 }
 
 func (a *API) checkCSRFToken(r *http.Request) bool {
 	token := r.Header.Get(HeaderRequestedWith)
-	return token == HeaderRequestedWithXML
+	return token == HeaderRequestedWithXML || token == HeaderRequestedWithKy
 }
 
 func (a *API) panicHandler(next http.Handler) http.Handler {
@@ -105,6 +109,10 @@ func (a *API) requiredAuth(handler func(w http.ResponseWriter, r *http.Request))
 func (a *API) authMiddleware(handler func(w http.ResponseWriter, r *http.Request), required bool) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		token, _ := auth.ParseAuthTokenFromRequest(r)
+		if len(token) == 0 {
+			a.errorResponse(w, r.URL.Path, http.StatusUnauthorized, "Unauthorized", nil)
+			return
+		}
 
 		a.logger.Debug(`attachAuthMiddleware`, mlog.Bool("accessToken", len(token) > 0))
 		decodeTokenData, _ := a.app.GetAuth().VerifyAccessToken(token)
@@ -117,7 +125,7 @@ func (a *API) authMiddleware(handler func(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-	    user, err := a.app.GetUser(decodeTokenData.UserID)
+		user, err := a.app.GetUser(decodeTokenData.UserID)
 		if err != nil {
 			if required {
 				a.errorResponse(w, r.URL.Path, http.StatusUnauthorized, "", err)

@@ -15,15 +15,13 @@ type Store interface {
 	Shutdown() error
 
 	// user
-	GetRegisteredUserCount() (int, error)
 	GetUserByID(userID string) (*model.User, error)
 	GetUserByEmail(email string) (*model.User, error)
 	GetUserByUsername(username string) (*model.User, error)
 	CreateUser(user *model.User) error
 
-	// team
-	GetTeam(ID string) (*model.Team, error)
-	UpsertTeamSignupToken(team model.Team) error
+	// post
+	InsertPost(post model.Post, userId string) error
 
 	// etc
 	DBType() string
@@ -34,7 +32,6 @@ type Store interface {
 type ErrNotFound struct {
 	resource string
 }
-
 
 // NewErrNotFound creates a new ErrNotFound instance.
 func NewErrNotFound(resource string) *ErrNotFound {

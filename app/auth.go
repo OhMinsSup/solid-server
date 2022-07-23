@@ -17,11 +17,6 @@ const (
 	SecondsPerMinute = 60
 )
 
-// GetRegisteredUserCount 는 등록된 사용자 수를 반환합니다.
-func (a *App) GetRegisteredUserCount() (int, error) {
-	return a.store.GetRegisteredUserCount()
-}
-
 // Login 인증 데이터가 유효한 경우 로그인하여 새 사용자 세션을 만듭니다.
 func (a *App) Login(username, email, password, mfaToken string) (string, error) {
 	var user *model.User
@@ -30,7 +25,8 @@ func (a *App) Login(username, email, password, mfaToken string) (string, error) 
 		user, err = a.store.GetUserByUsername(username)
 		if err != nil {
 			// TODO: metrics
-			return "", errors.Wrap(err, "invalid username or password")
+			a.logger.Debug("Invalid username for user")
+			return "", errors.New("invalid username")
 		}
 	}
 
@@ -39,7 +35,8 @@ func (a *App) Login(username, email, password, mfaToken string) (string, error) 
 		user, err = a.store.GetUserByEmail(email)
 		if err != nil {
 			// TODO: metrics
-			return "", errors.Wrap(err, "invalid username or password")
+			a.logger.Debug("Invalid email for user")
+			return "", errors.New("invalid email")
 		}
 	}
 
@@ -51,7 +48,7 @@ func (a *App) Login(username, email, password, mfaToken string) (string, error) 
 	if !auth.ComparePassword(user.Password, password) {
 		// TODO: metrics
 		a.logger.Debug("Invalid password for user", mlog.String("userID", user.ID))
-		return "", errors.New("invalid username or password")
+		return "", errors.New("invalid password")
 	}
 
 	authService := user.AuthService

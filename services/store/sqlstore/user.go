@@ -18,21 +18,6 @@ func (unf UserNotFoundError) Error() string {
 	return fmt.Sprintf("user not found (%s)", unf.id)
 }
 
-func (s *SQLStore) getRegisteredUserCount(db sq.BaseRunner) (int, error) {
-	query := s.getQueryBuilder(db).
-		Select("count(*)").
-		From(s.tablePrefix + "users").
-		Where(sq.Eq{"delete_at": 0})
-	row := query.QueryRow()
-
-	var count int
-	err := row.Scan(&count)
-	if err != nil {
-		return 0, err
-	}
-	return count, nil
-}
-
 func (s *SQLStore) getUsersByCondition(db sq.BaseRunner, condition interface{}, limit uint64) ([]*model.User, error) {
 	query := s.getQueryBuilder(db).
 		Select(
