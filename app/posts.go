@@ -13,7 +13,8 @@ import (
 func generateUrlSlug(title string) string {
 	urlSlug := slug.Make(title)
 	sid, _ := shortid.New(1, shortid.DefaultABC, 20)
-	result := fmt.Sprintf("%v-%v", urlSlug, sid.String())
+	id, _ := sid.Generate()
+	result := fmt.Sprintf("%v-%v", urlSlug, id)
 	return result
 }
 
@@ -25,15 +26,14 @@ func (a *App) CreatePost(body types.CreatePostRequest, userId string) error {
 	if len(body.Content) <= 0 {
 		return errors.New("the content is empty")
 	}
-
+	//
 	processedUrlSlug := body.Slug
-	err := a.store.GetSlugDuplicate(processedUrlSlug, userId)
-	if err != nil {
-		processedUrlSlug = generateUrlSlug(body.Title)
-	}
+	//err := a.store.GetSlugDuplicate(processedUrlSlug, userId)
+	//if err != nil {
+	//	processedUrlSlug = generateUrlSlug(body.Title)
+	//}
 
-	fmt.Println(processedUrlSlug)
-	err = a.store.InsertPost(&model.Post{
+	err := a.store.InsertPost(&model.Post{
 		ID:              utils.NewID(utils.IDTypePost),
 		Title:           body.Title,
 		SubTitle:        body.SubTitle,
@@ -42,8 +42,10 @@ func (a *App) CreatePost(body types.CreatePostRequest, userId string) error {
 		CoverImage:      body.CoverImage,
 		DisabledComment: body.DisabledComment,
 		PublishingAt:    body.PublishingAt,
-		Tags:            body.Tags,
+		Categories:      body.Categories,
 	}, userId)
+
+	fmt.Println(err)
 
 	return nil
 }

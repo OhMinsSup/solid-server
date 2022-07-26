@@ -29,7 +29,7 @@ type Post struct {
 	// 포스트에 연관된 태그
 	// required: false
 	// 임시 타입으로 설정
-	Tags []string `json:"tags"`
+	Categories []string `json:"categories"`
 
 	// 포스트 공개일
 	// required: false

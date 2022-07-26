@@ -29,3 +29,9 @@ func (s *SQLStore) InsertPost(post *model.Post, userId string) error {
 func (s *SQLStore) GetSlugDuplicate(slug, userId string) error {
 	return s.getSlugDuplicate(s.db, slug, userId)
 }
+
+// category
+
+func (s *SQLStore) GetFindOrCreate(names []string) error {
+	return s.getFindOrCreate(s.db, names)
+}

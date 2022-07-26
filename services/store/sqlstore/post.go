@@ -2,11 +2,9 @@ package sqlstore
 
 import (
 	"errors"
-	"fmt"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/mattermost/mattermost-server/v6/shared/mlog"
 	"solid-server/model"
-	"solid-server/utils"
 )
 
 func (s *SQLStore) getSlugDuplicate(db sq.BaseRunner, slug, userId string) error {
@@ -26,6 +24,10 @@ func (s *SQLStore) getSlugDuplicate(db sq.BaseRunner, slug, userId string) error
 
 	err = rows.Scan(nil, &processedUrlSlug, nil)
 	if err != nil {
+		s.logger.Error(
+			"getSlugDuplicate insert error",
+			mlog.Err(err),
+		)
 		return err
 	}
 
@@ -37,50 +39,52 @@ func (s *SQLStore) getSlugDuplicate(db sq.BaseRunner, slug, userId string) error
 }
 
 func (s *SQLStore) insertPost(db sq.BaseRunner, post *model.Post, userID string) error {
-	now := utils.GetMillis()
-
-	insertQuery := s.getQueryBuilder(db).Insert("").
-		Columns(
-			"id",
-			"title",
-			"slug",
-			"sub_title",
-			"content",
-			"tags",
-			"publishing_at",
-			"cover_image",
-			"disabled_comment",
-			"create_at",
-			"update_at",
-			"delete_at",
-			"user_id",
-		)
-
-	//tags, err := json.Marshal(post.Tags)
-	//if err != nil {
+	//now := utils.GetMillis()
+	//
+	//insertQuery := s.getQueryBuilder(db).Insert("").
+	//	Columns(
+	//		"id",
+	//		"title",
+	//		"slug",
+	//		"sub_title",
+	//		"content",
+	//		"publishing_at",
+	//		"cover_image",
+	//		"disabled_comment",
+	//		"create_at",
+	//		"update_at",
+	//		"delete_at",
+	//		"user_id",
+	//	)
+	//
+	//insertQueryValues := map[string]interface{}{
+	//	"id":               post.ID,
+	//	"title":            post.Title,
+	//	"slug":             post.Slug,
+	//	"sub_title":        post.SubTitle,
+	//	"content":          post.Content,
+	//	"publishing_at":    post.PublishingAt,
+	//	"cover_image":      post.CoverImage,
+	//	"disabled_comment": post.DisabledComment,
+	//	"create_at":        now,
+	//	"update_at":        now,
+	//	"delete_at":        0,
+	//	"user_id":          userID,
+	//}
+	//
+	//postQuery := insertQuery.SetMap(insertQueryValues).Into(s.tablePrefix + "posts")
+	//if _, err := postQuery.Exec(); err != nil {
+	//	s.logger.Error(
+	//		"insertPost insert error",
+	//		mlog.String("userID", userID),
+	//		mlog.Err(err),
+	//	)
 	//	return err
 	//}
 
-	insertQueryValues := map[string]interface{}{
-		"id":        post.ID,
-		"title":     post.Title,
-		"slug":      post.Slug,
-		"sub_title": post.SubTitle,
-		"content":   post.Content,
-		//"tags":             tags,
-		"publishing_at":    post.PublishingAt,
-		"cover_image":      post.CoverImage,
-		"disabled_comment": post.DisabledComment,
-		"create_at":        now,
-		"update_at":        now,
-		"delete_at":        0,
-		"user_id":          userID,
+	if len(post.Categories) > 0 {
+		s.GetFindOrCreate(post.Categories)
 	}
 
-	query := insertQuery.SetMap(insertQueryValues).Into(s.tablePrefix + "posts")
-	if _, err := query.Exec(); err != nil {
-		fmt.Println("insert error", err)
-		return err
-	}
 	return nil
 }

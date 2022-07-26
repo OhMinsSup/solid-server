@@ -20,7 +20,7 @@ type CreatePostRequest struct {
 
 	// Tags 포스트와 연관된 키워드
 	// required: false
-	Tags []string `json:"tags"`
+	Categories []string `json:"categories"`
 
 	// PublishingAt 포스트 공개일
 	// required: false
