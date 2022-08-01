@@ -25,7 +25,7 @@ type Store interface {
 	GetSlugDuplicate(slug, userId string) error
 
 	// category
-	GetFindOrCreate(names []string) error
+	GetFindOrCreate(names []string) ([]*model.Category, error)
 
 	// etc
 	DBType() string

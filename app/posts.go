@@ -1,9 +1,9 @@
 package app
 
 import (
-	"errors"
 	"fmt"
 	"github.com/gosimple/slug"
+	"github.com/pkg/errors"
 	"github.com/teris-io/shortid"
 	"solid-server/model"
 	"solid-server/services/types"
@@ -26,14 +26,18 @@ func (a *App) CreatePost(body types.CreatePostRequest, userId string) error {
 	if len(body.Content) <= 0 {
 		return errors.New("the content is empty")
 	}
-	//
-	processedUrlSlug := body.Slug
-	//err := a.store.GetSlugDuplicate(processedUrlSlug, userId)
-	//if err != nil {
-	//	processedUrlSlug = generateUrlSlug(body.Title)
-	//}
 
-	err := a.store.InsertPost(&model.Post{
+	if len(body.Categories) > 5 {
+		return errors.New("the categories max length 5")
+	}
+
+	processedUrlSlug := body.Slug
+	err := a.store.GetSlugDuplicate(processedUrlSlug, userId)
+	if err != nil {
+		processedUrlSlug = generateUrlSlug(body.Title)
+	}
+
+	err = a.store.InsertPost(&model.Post{
 		ID:              utils.NewID(utils.IDTypePost),
 		Title:           body.Title,
 		SubTitle:        body.SubTitle,
@@ -45,7 +49,9 @@ func (a *App) CreatePost(body types.CreatePostRequest, userId string) error {
 		Categories:      body.Categories,
 	}, userId)
 
-	fmt.Println(err)
+	if err != nil {
+		return errors.Wrap(err, "Unable to create the new post")
+	}
 
 	return nil
 }

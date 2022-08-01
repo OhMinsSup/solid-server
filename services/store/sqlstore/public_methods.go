@@ -32,6 +32,6 @@ func (s *SQLStore) GetSlugDuplicate(slug, userId string) error {
 
 // category
 
-func (s *SQLStore) GetFindOrCreate(names []string) error {
+func (s *SQLStore) GetFindOrCreate(names []string) ([]*model.Category, error) {
 	return s.getFindOrCreate(s.db, names)
 }

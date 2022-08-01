@@ -8,16 +8,11 @@ import (
 type IDType byte
 
 const (
-	IDTypeNone       IDType = '7'
-	IDTypeTeam       IDType = 't'
-	IDTypeBoard      IDType = 'b'
-	IDTypeView       IDType = 'v'
-	IDTypeSession    IDType = 's'
-	IDTypeUser       IDType = 'u'
-	IDTypeToken      IDType = 'k'
-	IDTypeBlock      IDType = 'a'
-	IDTypePost       IDType = 'p'
-	IDTypeCategories IDType = 'c'
+	IDTypeNone           IDType = 'n'
+	IDTypeUser           IDType = 'u'
+	IDTypePost           IDType = 'p'
+	IDTypeCategories     IDType = 'c'
+	IDTypePostCategories IDType = '1'
 )
 
 // NewID 는 전역적으로 고유한 식별자입니다.
