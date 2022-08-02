@@ -7,7 +7,39 @@ import (
 	"github.com/mattermost/mattermost-server/v6/shared/mlog"
 	"solid-server/model"
 	"solid-server/utils"
+	"strings"
 )
+
+func postFields(prefix string) []string {
+	fields := []string{
+		"id",
+		"title",
+		"slug",
+		"sub_title",
+		"content",
+		"publishing_at",
+		"cover_image",
+		"disabled_comment",
+		"create_at",
+		"update_at",
+		"delete_at",
+		"user_id",
+	}
+
+	if prefix == "" {
+		return fields
+	}
+
+	prefixedFields := make([]string, len(fields))
+	for i, field := range fields {
+		if strings.HasPrefix(field, "COALESCE(") {
+			prefixedFields[i] = strings.Replace(field, "COALESCE(", "COALESCE("+prefix, 1)
+		} else {
+			prefixedFields[i] = prefix + field
+		}
+	}
+	return prefixedFields
+}
 
 func (s *SQLStore) getSlugDuplicate(db sq.BaseRunner, slug, userId string) error {
 	query := s.getQueryBuilder(db).
@@ -40,64 +72,30 @@ func (s *SQLStore) getSlugDuplicate(db sq.BaseRunner, slug, userId string) error
 	return nil
 }
 
-func (s *SQLStore) syncPostCategory(db sq.BaseRunner, postId, categoryId string) error {
-	likedQuery := s.getQueryBuilder(db).
-		Select("id", "post_id", "category_id").
-		From(s.tablePrefix + "post_categories").
-		Where(sq.Eq{"post_id": postId, "category_id": categoryId})
+func (s *SQLStore) getPost(db sq.BaseRunner, postId string) (*model.Post, error) {
+	query := s.getQueryBuilder(db).
+		Select(postFields("p.")...).
+		From(s.tablePrefix + "posts as p").
+		LeftJoin(s.tablePrefix + "users as u on p.user_id=u.id").
+		Where(sq.Eq{"p.id": postId})
 
-	rows, err := likedQuery.Query()
-
+	rows, err := query.Query()
 	if err != nil {
-		s.logger.Error(`syncPostCategory ERROR`, mlog.Err(err))
-		return err
+		s.logger.Error(`getPost ERROR`, mlog.Err(err))
+		return nil, err
 	}
 	defer s.CloseRows(rows)
 
-	list, err := s.postCategoriesFromRows(rows)
+	posts, err := s.postsFromRows(rows)
 	if err != nil {
-		s.logger.Error(`syncPostCategory ERROR`, mlog.Err(err))
-		return err
+		return nil, err
 	}
 
-	if len(list) == 0 {
-		insertBuilder := s.getQueryBuilder(db).
-			Insert(s.tablePrefix+"post_categories").
-			Columns("id", "post_id", "category_id").
-			Values(utils.NewID(utils.IDTypePostCategories), postId, categoryId)
-
-		_, err = insertBuilder.Exec()
-		if err != nil {
-			s.logger.Error(`syncPostCategory post_categories table insert ERROR`, mlog.Err(err))
-			return err
-		}
-	} else {
-		var others []string
-		for _, like := range list {
-			if like.PostID == postId && like.CategoryId == categoryId {
-				// 등록이 된 경우
-			} else {
-				// 등록이 안된 경우
-				others = append(others, categoryId)
-			}
-		}
-
-		if len(others) != 0 {
-			insertBuilder := s.getQueryBuilder(db).Insert(s.tablePrefix+"post_categories").
-				Columns("id", "post_id", "category_id")
-			for _, other := range others {
-				insertBuilder = insertBuilder.Values(utils.NewID(utils.IDTypePostCategories), postId, other)
-			}
-
-			_, err = insertBuilder.Exec()
-			if err != nil {
-				s.logger.Error(`getFindOrCreate post_categories table insert ERROR`, mlog.Err(err))
-				return err
-			}
-		}
+	if len(posts) == 0 {
+		return nil, sql.ErrNoRows
 	}
 
-	return nil
+	return posts[0], nil
 }
 
 func (s *SQLStore) insertPost(db sq.BaseRunner, post *model.Post, userID string) error {
@@ -171,6 +169,66 @@ func (s *SQLStore) insertPost(db sq.BaseRunner, post *model.Post, userID string)
 	return nil
 }
 
+func (s *SQLStore) syncPostCategory(db sq.BaseRunner, postId, categoryId string) error {
+	likedQuery := s.getQueryBuilder(db).
+		Select("id", "post_id", "category_id").
+		From(s.tablePrefix + "post_categories").
+		Where(sq.Eq{"post_id": postId, "category_id": categoryId})
+
+	rows, err := likedQuery.Query()
+
+	if err != nil {
+		s.logger.Error(`syncPostCategory ERROR`, mlog.Err(err))
+		return err
+	}
+	defer s.CloseRows(rows)
+
+	list, err := s.postCategoriesFromRows(rows)
+	if err != nil {
+		s.logger.Error(`syncPostCategory ERROR`, mlog.Err(err))
+		return err
+	}
+
+	if len(list) == 0 {
+		insertBuilder := s.getQueryBuilder(db).
+			Insert(s.tablePrefix+"post_categories").
+			Columns("id", "post_id", "category_id").
+			Values(utils.NewID(utils.IDTypePostCategories), postId, categoryId)
+
+		_, err = insertBuilder.Exec()
+		if err != nil {
+			s.logger.Error(`syncPostCategory post_categories table insert ERROR`, mlog.Err(err))
+			return err
+		}
+	} else {
+		var others []string
+		for _, like := range list {
+			if like.PostID == postId && like.CategoryId == categoryId {
+				// 등록이 된 경우
+			} else {
+				// 등록이 안된 경우
+				others = append(others, categoryId)
+			}
+		}
+
+		if len(others) != 0 {
+			insertBuilder := s.getQueryBuilder(db).Insert(s.tablePrefix+"post_categories").
+				Columns("id", "post_id", "category_id")
+			for _, other := range others {
+				insertBuilder = insertBuilder.Values(utils.NewID(utils.IDTypePostCategories), postId, other)
+			}
+
+			_, err = insertBuilder.Exec()
+			if err != nil {
+				s.logger.Error(`getFindOrCreate post_categories table insert ERROR`, mlog.Err(err))
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 func (s *SQLStore) postCategoriesFromRows(rows *sql.Rows) ([]*model.PostCategories, error) {
 	results := []*model.PostCategories{}
 
@@ -190,4 +248,35 @@ func (s *SQLStore) postCategoriesFromRows(rows *sql.Rows) ([]*model.PostCategori
 	}
 
 	return results, nil
+}
+
+func (s *SQLStore) postsFromRows(rows *sql.Rows) ([]*model.Post, error) {
+	posts := []*model.Post{}
+
+	for rows.Next() {
+		var post model.Post
+
+		err := rows.Scan(
+			&post.ID,
+			&post.Title,
+			&post.Slug,
+			&post.SubTitle,
+			&post.Content,
+			&post.PublishingAt,
+			&post.CoverImage,
+			&post.DisabledComment,
+			&post.CreateAt,
+			&post.UpdateAt,
+			&post.DeleteAt,
+			&post.UserID,
+		)
+		if err != nil {
+			s.logger.Error("postsFromRows scan error", mlog.Err(err))
+			return nil, err
+		}
+
+		posts = append(posts, &post)
+	}
+
+	return posts, nil
 }

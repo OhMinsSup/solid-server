@@ -67,6 +67,8 @@ func (a *API) RegisterRoutes(r *mux.Router) {
 
 	// Post APIs
 	apiv1.HandleFunc("/posts", a.requiredAuth(a.handleCreatePost)).Methods("POST")
+	apiv1.HandleFunc("/posts/{postID}", a.handleReadPost).Methods("GET")
+
 }
 
 func (a *API) checkCSRFToken(r *http.Request) bool {

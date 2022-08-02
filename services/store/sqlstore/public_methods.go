@@ -30,6 +30,10 @@ func (s *SQLStore) GetSlugDuplicate(slug, userId string) error {
 	return s.getSlugDuplicate(s.db, slug, userId)
 }
 
+func (s *SQLStore) GetPost(postId string) (*model.Post, error) {
+	return s.getPost(s.db, postId)
+}
+
 // category
 
 func (s *SQLStore) GetFindOrCreate(names []string) ([]*model.Category, error) {

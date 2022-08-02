@@ -18,6 +18,10 @@ func generateUrlSlug(title string) string {
 	return result
 }
 
+func (a *App) GetPost(postId string) (*model.Post, error) {
+	return a.store.GetPost(postId)
+}
+
 func (a *App) CreatePost(body types.CreatePostRequest, userId string) error {
 	if len(body.Title) <= 0 {
 		return errors.New("the title is empty")

@@ -2,6 +2,8 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/gorilla/mux"
+	"github.com/mattermost/mattermost-server/v6/shared/mlog"
 	"io/ioutil"
 	"net/http"
 	"solid-server/model"
@@ -65,4 +67,54 @@ func (a *API) handleCreatePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jsonStringResponse(w, http.StatusOK, "{}")
+}
+
+func (a *API) handleReadPost(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation GET /posts/{postID} GetPost
+	//
+	// Returns posts id
+	//
+	// ---
+	// produces:
+	// - application/json
+	// parameters:
+	// - name: postID
+	//   in: path
+	//   description: Post ID
+	//   required: true
+	//   type: string
+	// security:
+	// - BearerAuth: []
+	// responses:
+	//   '200':
+	//     description: success
+	//     schema:
+	//       type: array
+	//       items:
+	//         "$ref": "#/definitions/Post"
+	//   default:
+	//     description: internal error
+	//     schema:
+	//       "$ref": "#/definitions/ErrorResponse"
+	postID := mux.Vars(r)["postID"]
+
+	// retrieve boards list
+	posts, err := a.app.GetPost(postID)
+	if err != nil {
+		a.errorResponse(w, r.URL.Path, http.StatusInternalServerError, "", err)
+		return
+	}
+
+	a.logger.Debug("GetPost",
+		mlog.String("postID", postID),
+	)
+
+	data, err := json.Marshal(posts)
+	if err != nil {
+		a.errorResponse(w, r.URL.Path, http.StatusInternalServerError, "", err)
+		return
+	}
+
+	// response
+	jsonBytesResponse(w, http.StatusOK, data)
 }

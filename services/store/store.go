@@ -23,6 +23,7 @@ type Store interface {
 	// post
 	InsertPost(post *model.Post, userId string) error
 	GetSlugDuplicate(slug, userId string) error
+	GetPost(postId string) (*model.Post, error)
 
 	// category
 	GetFindOrCreate(names []string) ([]*model.Category, error)
